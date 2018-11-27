@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         //主线程不能进行耗时操作
-        new Thread(){
+       new Thread(){
             @Override
             public void run() {
                 super.run();
@@ -30,23 +30,22 @@ public class MainActivity extends AppCompatActivity {
                 String syncresponse = null;
                 try {
                     syncresponse = getexample.run("https://raw.github.com/square/okhttp/master/README.md");
-                    System.out.println("同步请求返回参数"+syncresponse);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                /**
-                 * 异步请求
-                 */
-                PostExample postexample = new PostExample();
-                String json = postexample.bowlingJson("Jesse", "Jake");
-                try {
-                    String asynresponse = postexample.post("http://www.roundsapp.com/post", json);
-                    System.out.println("异步请求返回参数"+asynresponse);
+                    Log.e("maoqitian","异步请求返回参数"+syncresponse);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }.start();
+        /**
+         * 异步请求
+         */
+        PostExample postexample = new PostExample();
+        String json = postexample.bowlingJson("Jesse", "Jake");
+        try {
+            postexample.post("http://www.roundsapp.com/post", json);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     class PostExample {
@@ -54,15 +53,24 @@ public class MainActivity extends AppCompatActivity {
 
         OkHttpClient client = new OkHttpClient();
 
-        String post(String url, String json) throws IOException {
+         void post(String url, String json) throws IOException {
             RequestBody body = RequestBody.create(JSON, json);
-            Request request = new Request.Builder()
+            final Request request = new Request.Builder()
                     .url(url)
                     .post(body)
                     .build();
-            try (Response response = client.newCall(request).execute()) {
-                return response.body().string();
-            }
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    Log.e("maoqitian","请求错误"+e.toString());
+                }
+
+                @Override
+                public void onResponse(Call call, Response response) throws IOException {
+                    String asynresponse= response.body().string();
+                    Log.e("maoqitian","异步请求返回参数"+asynresponse);
+                }
+            });
         }
 
         String bowlingJson(String player1, String player2) {
